@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>geometry4Sharp</id>
+    <version>1.0.0</version>
+    <title>geometry4Sharp</title>
+    <authors>geometry4Sharp</authors>
+    <license type="expression">BSL-1.0</license>
+    <licenseUrl>https://licenses.nuget.org/BSL-1.0</licenseUrl>
+    <projectUrl>https://github.com/NewWheelTech/geometry4Sharp</projectUrl>
+    <description>C# library for 2D/3D geometric computing and triangle mesh processing forked from Geometry3Sharp</description>
+    <copyright>Copyright © Ryan Schmidt 2016 / Copyright © TODO 2022</copyright>
+    <tags>geometry3 graphics math approximation solvers color convexhull meshes spatial curves solids 3d unity</tags>
+    <repository type="git" url="https://github.com/NewWheelTech/geometry4Sharp" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.8" />
+      <group targetFramework="net6.0" />
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>
