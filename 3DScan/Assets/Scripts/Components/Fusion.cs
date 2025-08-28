@@ -1,7 +1,6 @@
 using UnityEngine;
 using OpenCVForUnity.CoreModule;
 using System.Collections.Generic;
-using Components;
 using OpenCVForUnity.Features2dModule;
 using OpenCVForUnity.ImgcodecsModule;
 using OpenCVForUnity.ImgprocModule;
@@ -16,11 +15,12 @@ using System.IO;
 using System.Text;
 using Unity.VisualScripting;
 using TMPro;
+using JetBrains.Annotations;
 
 public class Fusion : MonoBehaviour
 {
     private Dictionary<Vector3Int, (float tsdf, float weight, Color color)> tsdfGrid = new();
-    public float voxelSize = 0.01f; 
+    public float voxelSize = 0.01f;
     public float truncation = 0.03f;
     float quantityQualityNorm = 30f;
     float distanceQualityDecay = 2.5f;
@@ -45,12 +45,13 @@ public class Fusion : MonoBehaviour
     public RawImage TextureVisualizer;
     public TextMeshProUGUI ModeButtonText;
     public TextMeshProUGUI StopTSDFButtonText;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         PCDRenderer = FindFirstObjectByType<PointCloudRenderer>();
         detector = ORB.create();
-        detector.setMaxFeatures(1000); 
+        detector.setMaxFeatures(1000);
         matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
     }
 
@@ -80,7 +81,7 @@ public class Fusion : MonoBehaviour
         }
         else
         {
-            ExtractSurfacePointsFromTSDF(0,voxelSize * 0.5f, 0.5f);
+            ExtractSurfacePointsFromTSDF(0, voxelSize * 0.5f, 0.5f);
             ModeButtonText.text = "TSDF";
         }
         PCDRenderer.Render(RenderPointCloud.ToArray(), RenderPointCloudColor.ToArray());
@@ -95,7 +96,7 @@ public class Fusion : MonoBehaviour
         prevRGBFrame = null;
         prevDepthFrame = null;
     }
-    
+
 
     public void VisualizeByTexture(Texture2D texture)
     {
@@ -110,11 +111,11 @@ public class Fusion : MonoBehaviour
         Mat currentRGBMat = new Mat(rgbImage.height, rgbImage.width, CvType.CV_8UC3);
         Utils.texture2DToMat(rgbImage, currentRGBMat);
         Imgproc.cvtColor(currentRGBMat, currentGrayMat, Imgproc.COLOR_RGB2GRAY);
-        
+
         Texture2D grayTexture = new Texture2D(currentGrayMat.cols(), currentGrayMat.rows(), TextureFormat.R8, false);
         Utils.matToTexture2D(currentGrayMat, grayTexture);
         VisualizeByTexture(grayTexture);
-      
+
         MatOfKeyPoint currentKeypoints = new MatOfKeyPoint();
         Mat currentDescriptors = new Mat();
 
@@ -157,12 +158,12 @@ public class Fusion : MonoBehaviour
                 rgbImage.height,
                 goodMatches,
                 prevKeypoints,
-                currentKeypoints,$"prev_depth_matches{DateTime.Now:dd-MM-yyyy-HH-mm-ss}.png",
+                currentKeypoints, $"prev_depth_matches{DateTime.Now:dd-MM-yyyy-HH-mm-ss}.png",
                 $"curr_depth_matches{DateTime.Now:dd-MM-yyyy-HH-mm-ss}.png");
                 foreach (DMatch match in goodMatches)
                 {
                     Point prevPoint = prevKPArray[match.queryIdx].pt;
-                    prevPoint.y = rgbImage.height - prevPoint.y; 
+                    prevPoint.y = rgbImage.height - prevPoint.y;
                     // Debug.Log("PrevP:" + prevPoint.x + "," + prevPoint.y);
                     Vector3 prevWorldPoint = GetWorldPointFromDepth(prevPoint, prevDepthPoints, rgbImage.width, prevDepthCameraPose);
                     if (prevWorldPoint == Vector3.zero) continue;
@@ -216,7 +217,7 @@ public class Fusion : MonoBehaviour
                     Quaternion refinedRotation = deltaPose.rotation * prevDepthCameraPose.rotation;
                     Vector3 refinedPosition = deltaPose.rotation * prevDepthCameraPose.position + deltaPose.position;
 
-                    float matchValue = CalculateMatchQuality(goodMatches,sourcePoints.Count);
+                    float matchValue = CalculateMatchQuality(goodMatches, sourcePoints.Count);
                     Pose refinedDepthPose = new Pose(
                         Vector3.Lerp(depthCameraPose.position, refinedPosition, matchValue),
                         Quaternion.Slerp(depthCameraPose.rotation, refinedRotation, matchValue));
@@ -268,7 +269,7 @@ public class Fusion : MonoBehaviour
             float gray = 0.299f * pixels[i].r + 0.587f * pixels[i].g + 0.114f * pixels[i].b;
             grayPixels[i] = new Color(gray, gray, gray, 1.0f);
         }
-        Debug.Log(grayPixels[123]);
+        // Debug.Log(grayPixels[123]);
         grayTexture.SetPixels(grayPixels);
         grayTexture.Apply();
         return grayTexture;
@@ -282,18 +283,18 @@ public class Fusion : MonoBehaviour
     }
     private Vector3 GetWorldPointFromDepth(Point pixel, Vector3[] depthData, int width, Pose cameraPose)
     {
-        Debug.Log("depth length: " + depthData.Length);
-        Debug.Log("now pixel:" + pixel.x + "," + pixel.y + ", index:" + ((int)pixel.y * width + (int)pixel.x));
+        // Debug.Log("depth length: " + depthData.Length);
+        // Debug.Log("now pixel:" + pixel.x + "," + pixel.y + ", index:" + ((int)pixel.y * width + (int)pixel.x));
         Vector3 depthValue = depthData[(int)pixel.y * width + (int)pixel.x];
-        Debug.Log("prev World DepthValue:" + depthValue);
-        Debug.Log("neighbors: " + depthData[Math.Clamp((int)pixel.y * width + (int)pixel.x - 1, 0, depthData.Length - 1)] + "|" + depthData[Math.Clamp((int)pixel.y * width + (int)pixel.x + 1, 0, depthData.Length - 1)]);
+        // Debug.Log("prev World DepthValue:" + depthValue);
+        // Debug.Log("neighbors: " + depthData[Math.Clamp((int)pixel.y * width + (int)pixel.x - 1, 0, depthData.Length - 1)] + "|" + depthData[Math.Clamp((int)pixel.y * width + (int)pixel.x + 1, 0, depthData.Length - 1)]);
         return Vector3.Distance(depthValue, Vector3.zero) < 0.01f ? Vector3.zero : TransformPointToWorld(depthValue, cameraPose);
     }
     private Vector3 GetLocalPointFromDepth(Point pixel, Vector3[] depthData, int width)
     {
         Vector3 depthValue = depthData[(int)pixel.y * width + (int)pixel.x];
-        Debug.Log("now local DepthValue:" + depthValue);
-        Debug.Log("neighbors: " + depthData[Math.Clamp((int)pixel.y * width + (int)pixel.x - 1, 0, depthData.Length - 1)] + "|" + depthData[Math.Clamp((int)pixel.y * width + (int)pixel.x + 1, 0, depthData.Length - 1)]);
+        // Debug.Log("now local DepthValue:" + depthValue);
+        // Debug.Log("neighbors: " + depthData[Math.Clamp((int)pixel.y * width + (int)pixel.x - 1, 0, depthData.Length - 1)] + "|" + depthData[Math.Clamp((int)pixel.y * width + (int)pixel.x + 1, 0, depthData.Length - 1)]);
         return depthValue;
     }
 
@@ -542,9 +543,9 @@ public class Fusion : MonoBehaviour
             img1Copy, kp1,
             img2Copy, kp2,
             matchesMat, outputMat,
-            new Scalar(0, 255, 0), 
-            new Scalar(255, 0, 0), 
-            new MatOfByte(), 
+            new Scalar(0, 255, 0),
+            new Scalar(255, 0, 0),
+            new MatOfByte(),
             Features2d.DrawMatchesFlags_DEFAULT);
 
         Texture2D outputTexture = new Texture2D(outputMat.cols(), outputMat.rows());
@@ -616,18 +617,18 @@ public class Fusion : MonoBehaviour
             return;
         }
 
-        
+
         Color[] prevPixels = new Color[width * height];
         Color[] currPixels = new Color[width * height];
         for (int i = 0; i < prevDepthPoints.Length; i++)
         {
-            float z = Vector3.Distance(prevDepthPoints[i],Vector3.zero);
+            float z = Vector3.Distance(prevDepthPoints[i], Vector3.zero);
             float norm = (z > 0.0001f) ? (z - minDepth) / (maxDepth - minDepth) : 0f;
             prevPixels[i] = new Color(norm, norm, norm, 1f);
         }
         for (int i = 0; i < currDepthPoints.Length; i++)
         {
-            float z = Vector3.Distance(currDepthPoints[i],Vector3.zero);
+            float z = Vector3.Distance(currDepthPoints[i], Vector3.zero);
             float norm = (z > 0.0001f) ? (z - minDepth) / (maxDepth - minDepth) : 0f;
             currPixels[i] = new Color(norm, norm, norm, 1f);
         }
@@ -693,7 +694,7 @@ public class Fusion : MonoBehaviour
 
     public void SaveCurrentPCD()
     {
-        SaveVector3ListToPCD(PointCloud, PointCloudColor, Application.persistentDataPath + $"/fusedPointCloud{DateTime.Now:dd-MM-yyyy-HH-mm-ss}.pcd");
+        SaveVector3ListToPCD(RenderPointCloud, RenderPointCloudColor, Application.persistentDataPath + $"/fusedPointCloud{DateTime.Now:dd-MM-yyyy-HH-mm-ss}.pcd");
     }
     public void SaveVector3ListToPCD(List<Vector3> points, List<Color> colors, string filePath)
     {
@@ -739,5 +740,51 @@ public class Fusion : MonoBehaviour
             }
         }
         Debug.Log($"PCD file saved to: {filePath} with {points.Count} points");
+    }
+    public void DeletePointByRay(Ray ray, float radius)
+    {
+        if (PointCloud == null || PointCloud.Count == 0)
+        {
+            Debug.LogWarning("Point cloud is empty");
+            return;
+        }
+
+        for (int i = PointCloud.Count - 1; i >= 0; i--)
+        {
+            Vector3 point = PointCloud[i];
+            // Compute shortest distance from point to ray
+            Vector3 toPoint = point - ray.origin;
+            float t = Vector3.Dot(toPoint, ray.direction);
+            Vector3 closest = ray.origin + ray.direction * t;
+            float dist = Vector3.Distance(point, closest);
+            if (dist < radius)
+            {
+                PointCloud.RemoveAt(i);
+                PointCloudColor.RemoveAt(i);
+            }
+        }
+        var keysToRemove = new List<Vector3Int>();
+        foreach (var kvp in tsdfGrid)
+        {
+            Vector3Int voxel = kvp.Key;
+            Vector3 voxelCenter = new Vector3(
+                (voxel.x + 0.5f) * voxelSize,
+                (voxel.y + 0.5f) * voxelSize,
+                (voxel.z + 0.5f) * voxelSize
+            );
+            Vector3 toVoxel = voxelCenter - ray.origin;
+            float t = Vector3.Dot(toVoxel, ray.direction);
+            Vector3 closest = ray.origin + ray.direction * t;
+            float dist = Vector3.Distance(voxelCenter, closest);
+            if (dist < radius)
+            {
+                keysToRemove.Add(voxel);
+            }
+        }
+        foreach (var key in keysToRemove)
+        {
+            tsdfGrid.Remove(key);
+        }
+        RenderPCD();
     }
 }
