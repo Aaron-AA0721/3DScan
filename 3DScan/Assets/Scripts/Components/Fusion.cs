@@ -20,8 +20,10 @@ using TMPro;
 public class Fusion : MonoBehaviour
 {
     private Dictionary<Vector3Int, (float tsdf, float weight, Color color)> tsdfGrid = new();
-    public float voxelSize = 0.0005f; 
-    public float truncation = 0.03f; 
+    public float voxelSize = 0.01f; 
+    public float truncation = 0.03f;
+    float quantityQualityNorm = 30f;
+    float distanceQualityDecay = 2.5f;
     PointCloudRenderer PCDRenderer;
     List<Vector3> PointCloud = new List<Vector3>();
     List<Color> PointCloudColor = new List<Color>();
@@ -273,10 +275,9 @@ public class Fusion : MonoBehaviour
     }
     private float CalculateMatchQuality(List<DMatch> goodMatches, int srcCount)
     {
-        float quantityQuality = Mathf.Clamp01(srcCount / 30f);
+        float quantityQuality = Mathf.Clamp01(srcCount / quantityQualityNorm);
         float avgDistance = goodMatches.Average(m => m.distance);
-        float distanceQuality = Mathf.Exp(-2.5f * avgDistance);
-        Debug.Log("Match Quality - Quantity: " + quantityQuality + ", Distance: " + distanceQuality);
+        float distanceQuality = Mathf.Exp(-distanceQualityDecay * avgDistance);
         return quantityQuality * distanceQuality;
     }
     private Vector3 GetWorldPointFromDepth(Point pixel, Vector3[] depthData, int width, Pose cameraPose)
