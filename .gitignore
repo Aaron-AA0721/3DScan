@@ -97,3 +97,10 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+
+/3DScan/Assets/OpenCVForUnity/*
+/3DScan/Assets/OpenCVForUnity.meta
+/3DScan/Assets/Plugins/*
+/3DScan/Assets/Plugins.meta
+/3DScan/Assets/StreamingAssets/*
